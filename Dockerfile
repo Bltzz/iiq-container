@@ -1,4 +1,4 @@
-FROM tomcat:9.0.72-jdk11-temurin-focal AS build-iiq-app
+FROM tomcat:9.0.72-jdk17-temurin-focal AS build-iiq-app
 ARG SPTARGET
 # Install dependencies
 RUN apt-get update && \
@@ -12,12 +12,12 @@ COPY iiq-app ./
 RUN export SPTARGET=$SPTARGET && \
 rm -Rf build && \
 # The following line is needed to build docker image in windows. Without this, it will complain ./build.sh file can not be found. This is due to encoding issue.
-sed -i 's/\r$//' build.sh  && \
+#sed -i 's/\r$//' build.sh  && \
 chmod +x build.sh && \
 ./build.sh clean war
 
 
-FROM tomcat:9.0.72-jdk11-temurin-focal
+FROM tomcat:9.0.72-jdk17-temurin-focal
 ARG FULL_TEXT_INDEX_PATH
 ARG UPLOAD_FILE_PATH
 
@@ -58,6 +58,8 @@ EXPOSE 8009
 EXPOSE 8443
 VOLUME "/usr/local/tomcat/webapps"
 WORKDIR /usr/local/tomcat
+
+ENV JAVA_OPTS="--add-exports=java.naming/com.sun.jndi.ldap=ALL-UNNAMED"
 
 # Launch IIQ
 CMD ["/entrypoint.sh", "run"]
