@@ -1,12 +1,14 @@
 Extend SSB (Standard Service Build) to Containerize (Docker) SailPoint IdentityIQ
 ================================
+# Prerequisite
+Please note that Identity IQ is closed source so you first need to get a license for Idenity IQ and go to [https://community.sailpoint.com/] to download the software. You will put the downloaded identityiq-x.y.zip into the build/src/ directory to get started.
 
 # Summary
-Inspired by [https://github.com/steffensperling/sailpoint-iiq](url), this solution is built on top of SSB (Standard Service Build) v7.0.1. It relies on SSB to perform the build the IdentityIQ war file. The war file is then used to build a Docker container image. The generated Docker image can then be deployed to a Kubernetes cluster or Docker container instance. In this example, we will demonstrate:
+Inspired by [https://github.com/steffensperling/sailpoint-iiq](url), this solution is built on top of SSB (Standard Service Build) v7.0.2. It relies on SSB to perform the build the IdentityIQ war file. The war file is then used to build a Docker container image. The generated Docker image can then be deployed to a Kubernetes cluster or Docker container instance. In this example, we will demonstrate:
 - run in Docker container instance.
 - use Helm Chart to deploy the Docker image to a simulated Kubernetes cluster in local environment (Docker Desktop). 
 
-The containerized IdentityIQ runs in Tomcat 9.0.72 and JDK 11.
+The containerized IdentityIQ runs in Tomcat 9.0.72 and JDK 17.
 
 # Folder Structure Explained
 After you clone the repository to your local file system, you will see the following a sub-folders (***iiq-app***) and other files under the root folder (***iiq-container***) as explained below.
@@ -16,9 +18,9 @@ This folder represents a **SSB Install Directory** you typically will use for an
 
 You need to download the SSB package from the link below:
 
-[https://community.sailpoint.com/t5/Professional-Services/Services-Standard-Build-SSB-v7-0-1/ta-p/190496](url)
+[https://community.sailpoint.com/t5/Professional-Services/Services-Standard-Build-SSB-v7-0-2/ta-p/190496](url)
 
-Then unzip the file ***ssb-v7.0.1.zip*** and copy all the files and subfolders under folder ***ssb-v7.0.1*** to this location (***iip-app***).
+Then unzip the file ***ssb-v7.0.2.zip*** and copy all the files and subfolders under folder ***ssb-v7.0.2*** to this location (***iip-app***).
 
 When I download SSB package to start a brand new project, I noticed I have to comment out the following section in the *build.xml* file to make the build successful.
 
@@ -46,13 +48,15 @@ When I download SSB package to start a brand new project, I noticed I have to co
 
 Please note that IdentityIQ is closed source so you first need to get a license for IdenityIQ and go to [https://community.sailpoint.com](url) to download the software. Then you will put the downloaded zip and patch jar file into the base/ga and base/patch directory as per SSB document.
 
-In another scenario that you may already have all source code in an existing *SSB Install Directory*, you simply need to copy all the files and subfolders to this folder. 
+In another scenario that you may already have all source code in an existing *SSB Install Directory*, you simply need to copy all the files and subfolders to this folder.
+
+You need to copy the database drivers (depending on your db installation) into the `iiq-app/web/WEB-INF/lib/` folder to connect to your database.
 
 
 ## other files
 The remaining files under the root folder are used to build the docker image for IdentityIQ. The docker image is built based from:
 
-- 9.0.72-jdk11-temurin-focal
+- `9.0.72-jdk17-temurin-focal`
 
 You can modify the file ***Dockerfile*** to change to different version of Tomcat or JDK, but you will need to test to ensure the image still works in your docker environment.
 
@@ -73,9 +77,12 @@ Run the following command under the root folder (***iiq-container***):
 ```
 docker build . -t <<image-name>> --build-arg SPTARGET=<<environment>>
 ```
+
 You need to specify the image name and environment parameter "***SPTARGET***" to execute the command. Below is an exmaple to build image against sandbox environment. 
 
-Note: the environment parameter (***SPTARGET***) is required only because of SSB, the image itself doesn't contain environment related files (***iiq.properties*** is stripped off from the war file inside the image).  
+Note I: the environment parameter (***SPTARGET***) is required only because of SSB, the image itself doesn't contain environment related files (***iiq.properties*** is stripped off from the war file inside the image). 
+
+Note II: If you are working with ignorefiles and different environment dependend files, you need to work with environment dependend images! 
 
 ```
 docker build . -t iiq-image --build-arg SPTARGET=sandbox
@@ -105,7 +112,7 @@ You may need to tag and publish the image to an internal docker image registry
 To run IdentityIQ in a Docker Container instance is simply to execute the following command after the docker image is built. Before that, you need to prepare the *iiq.properties* file and save it in your preferred location, then update the command with the right path. Most likely, you may want to override *log4j2.properties* with your ownn version. You can just simply add an additional parameter. Lastly, change *iiq-image* to name of docker image you've built.
 
 ```
-docker run -it -v /Users/bruce.ren/Desktop/log/sp-log/:/usr/local/tomcat/logs -v /Users/bruce.ren/Desktop/iiq-properties/sandbox/iiq.properties/:/usr/local/tomcat/webapps/identityiq/WEB-INF/classes/iiq.properties --name my-iiq-container -d -p 8080:8080 iiq-image
+docker run -it -v /path/to/your/log/sp-log/:/usr/local/tomcat/logs -v /path/to/your/iiq.properties/:/usr/local/tomcat/webapps/identityiq/WEB-INF/classes/iiq.properties --name my-iiq-container -d -p 8080:8080 iiq-image
 ```
 
 ## Run in local Kubernetes cluster in Docker Desktop
